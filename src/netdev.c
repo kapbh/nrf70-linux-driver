@@ -320,7 +320,7 @@ nrf_wifi_netdev_add_vif(struct nrf_wifi_ctx_lnx *rpu_ctx_lnx,
 
 	strncpy(netdev->name, if_name, sizeof(netdev->name) - 1);
 
-	ether_addr_copy(netdev->dev_addr, mac_addr);
+	eth_hw_addr_set(netdev, mac_addr);
 
 	netdev->ieee80211_ptr = wdev;
 

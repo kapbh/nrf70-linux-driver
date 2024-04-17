@@ -34,18 +34,19 @@ int nrf_wifi_cfg80211_disassoc(struct wiphy *wiphy, struct net_device *dev,
 			       struct cfg80211_disassoc_request *req);
 
 int nrf_wifi_cfg80211_add_key(struct wiphy *wiphy, struct net_device *netdev,
-			      u8 key_index, bool pairwise, const u8 *mac_addr,
-			      struct key_params *params);
+int link_id, u8 key_index, bool pairwise,
+const u8 *mac_addr, struct key_params *params);
 
 int nrf_wifi_cfg80211_del_key(struct wiphy *wiphy, struct net_device *dev,
-			      u8 key_idx, bool pairwise, const u8 *mac_addr);
+int link_id, u8 key_idx, bool pairwise,
+const u8 *mac_addr);
 
 int nrf_wifi_cfg80211_set_def_key(struct wiphy *wiphy,
-				  struct net_device *netdev, u8 key_index,
-				  bool unicast, bool multicast);
+struct net_device *netdev, int link_id,
+u8 key_index, bool unicast, bool multicast);
 
-int nrf_wifi_cfg80211_set_def_mgmt_key(struct wiphy *wiphy,
-				       struct net_device *netdev, u8 key_index);
+int nrf_wifi_cfg80211_set_def_mgmt_key(struct wiphy *wiphy, struct net_device *netdev,
+int link_id, u8 key_index);
 
 int nrf_wifi_cfg80211_get_tx_power(struct wiphy *wiphy,
 				   struct wireless_dev *wdev, int *dbm);

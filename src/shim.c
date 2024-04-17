@@ -25,6 +25,7 @@
 #include <net/cfg80211.h>
 #include <linux/math64.h>
 #include <linux/mutex.h>
+#include <linux/of.h>
 
 #include "osal_api.h"
 #include "osal_ops.h"
@@ -844,7 +845,7 @@ out:
 	return ret;
 }
 
-static int shim_bus_spi_remove(struct spi_device *spi_dev)
+static void shim_bus_spi_remove(struct spi_device *spi_dev)
 {
 	struct shim_bus_spi_dev_ctx *lnx_spi_dev_ctx = NULL;
 	struct shim_bus_spi_priv *lnx_spi_priv = NULL;
@@ -858,7 +859,6 @@ static int shim_bus_spi_remove(struct spi_device *spi_dev)
 	if (lnx_spi_priv->dev_added) {
 		nrf_wifi_fmac_dev_rem_lnx(lnx_spi_dev_ctx->lnx_rpu_ctx);
 	}
-	return 0;
 }
 
 static void irq_work_handler(struct work_struct *work)
@@ -1150,7 +1150,7 @@ const struct nrf_wifi_osal_ops nrf_wifi_os_ops = {
 	.bus_qspi_ps_status = shim_bus_qspi_ps_status,
 #endif
 	.assert = shim_assert,
-	.strlen = shim_strlen,
+	.get_strlen = shim_strlen,
 };
 
 const struct nrf_wifi_osal_ops *get_os_ops(void)

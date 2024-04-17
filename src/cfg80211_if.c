@@ -186,8 +186,8 @@ out:
 }
 
 int nrf_wifi_cfg80211_add_key(struct wiphy *wiphy, struct net_device *netdev,
-			      u8 key_index, bool pairwise, const u8 *mac_addr,
-			      struct key_params *params)
+int link_id, u8 key_index, bool pairwise,
+const u8 *mac_addr,  struct key_params *params)
 {
 	struct wireless_dev *wdev = NULL;
 	struct nrf_wifi_ctx_lnx *rpu_ctx_lnx = NULL;
@@ -249,7 +249,8 @@ out:
 }
 
 int nrf_wifi_cfg80211_del_key(struct wiphy *wiphy, struct net_device *netdev,
-			      u8 key_idx, bool pairwise, const u8 *mac_addr)
+			      int link_id, u8 key_idx, bool pairwise,
+				  const u8 *mac_addr)
 {
 	struct wireless_dev *wdev = NULL;
 	struct nrf_wifi_ctx_lnx *rpu_ctx_lnx = NULL;
@@ -289,9 +290,9 @@ out:
 	return status;
 }
 
-int nrf_wifi_cfg80211_set_def_key(struct wiphy *wiphy,
-				  struct net_device *netdev, u8 key_index,
-				  bool unicast, bool multicast)
+int nrf_wifi_cfg80211_set_def_key(struct wiphy *wiphy, struct net_device *netdev,
+int link_id, u8 key_index, bool unicast,
+bool multicast)
 {
 	struct wireless_dev *wdev = NULL;
 	struct nrf_wifi_ctx_lnx *rpu_ctx_lnx = NULL;
@@ -337,7 +338,8 @@ out:
 }
 
 int nrf_wifi_cfg80211_set_def_mgmt_key(struct wiphy *wiphy,
-				       struct net_device *netdev, u8 key_index)
+				      struct net_device *netdev, int link_id,
+					  u8 key_index)
 {
 	struct wireless_dev *wdev = NULL;
 	struct nrf_wifi_ctx_lnx *rpu_ctx_lnx = NULL;
@@ -553,7 +555,8 @@ out:
 	return status;
 }
 
-int nrf_wifi_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *netdev)
+int nrf_wifi_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *netdev,
+					unsigned int link_id)
 {
 	struct wireless_dev *wdev = NULL;
 	struct nrf_wifi_ctx_lnx *rpu_ctx_lnx = NULL;
@@ -597,12 +600,12 @@ int nrf_wifi_cfg80211_add_sta(struct wiphy *wiphy, struct net_device *netdev,
 
 	add_sta_info->nrf_wifi_listen_interval = params->listen_interval;
 
-	if (params->supported_rates_len > 0) {
-		memcpy(add_sta_info->supp_rates.rates, params->supported_rates,
-		       params->supported_rates_len);
+	if (params->link_sta_params.supported_rates_len > 0) {
+		memcpy(add_sta_info->supp_rates.rates, params->link_sta_params.supported_rates,
+		       params->link_sta_params.supported_rates_len);
 
 		add_sta_info->supp_rates.nrf_wifi_num_rates =
-			params->supported_rates_len;
+			params->link_sta_params.supported_rates_len;
 	}
 
 	if (params->ext_capab_len > 0) {
@@ -634,12 +637,12 @@ int nrf_wifi_cfg80211_add_sta(struct wiphy *wiphy, struct net_device *netdev,
 	flags2->mask = params->sta_flags_mask;
 	flags2->set = params->sta_flags_set;
 
-	if (params->ht_capa)
-		memcpy(add_sta_info->ht_capability, params->ht_capa,
+	if (params->link_sta_params.ht_capa)
+		memcpy(add_sta_info->ht_capability, params->link_sta_params.ht_capa,
 		       sizeof(struct ieee80211_ht_cap));
 
-	if (params->vht_capa)
-		memcpy(add_sta_info->vht_capability, params->vht_capa,
+	if (params->link_sta_params.vht_capa)
+		memcpy(add_sta_info->vht_capability, params->link_sta_params.vht_capa,
 		       sizeof(struct ieee80211_vht_cap));
 
 	ether_addr_copy(add_sta_info->mac_addr, mac);
@@ -752,9 +755,9 @@ int nrf_wifi_cfg80211_chg_sta(struct wiphy *wiphy, struct net_device *netdev,
 
 	ether_addr_copy(chg_sta_info->mac_addr, mac);
 
-	if (params->opmode_notif_used)
+	if (params->link_sta_params.opmode_notif_used)
 		chg_sta_info->opmode_notif =
-			(unsigned char)params->opmode_notif;
+			(unsigned char)params->link_sta_params.opmode_notif;
 
 	if (params->max_sp)
 		chg_sta_info->wme_max_sp = params->max_sp;
@@ -1238,12 +1241,22 @@ void nrf_wifi_cfg80211_assoc_resp_callbk_fn(
 	unsigned int event_len)
 {
 	struct nrf_wifi_fmac_vif_ctx_lnx *vif_ctx_lnx = NULL;
+	struct cfg80211_rx_assoc_resp resp = {.uapsd_queues = -1,};
+
+	resp.buf = (u8 *)assoc_resp_event->frame.frame;
+	resp.len = assoc_resp_event->frame.frame_len;
+	resp.req_ies = NULL;
+	resp.req_ies_len = 0;
 
 	vif_ctx_lnx = os_vif_ctx;
 
+	cfg80211_rx_assoc_resp(vif_ctx_lnx->netdev, &resp);
+
+#if 0
 	cfg80211_rx_assoc_resp(vif_ctx_lnx->netdev, vif_ctx_lnx->bss,
 			       assoc_resp_event->frame.frame,
 			       assoc_resp_event->frame.frame_len, -1, NULL, 0);
+#endif
 }
 
 int nrf_wifi_cfg80211_deauth(struct wiphy *wiphy, struct net_device *netdev,
@@ -1325,7 +1338,7 @@ int nrf_wifi_cfg80211_disassoc(struct wiphy *wiphy, struct net_device *netdev,
 
 	disassoc_info->reason_code = req->reason_code;
 
-	memcpy(disassoc_info->mac_addr, req->bss->bssid, ETH_ALEN);
+	memcpy(disassoc_info->mac_addr, req->ap_addr, ETH_ALEN);
 
 	if (req->local_state_change)
 		disassoc_info->nrf_wifi_flags |=
@@ -2167,6 +2180,7 @@ int nrf_wifi_cfg80211_get_tx_power(struct wiphy *wiphy,
 
 int nrf_wifi_cfg80211_get_channel(struct wiphy *wiphy,
 				  struct wireless_dev *wdev,
+				  unsigned int link_id,
 				  struct cfg80211_chan_def *chandef)
 {
 	struct nrf_wifi_ctx_lnx *rpu_ctx_lnx = NULL;

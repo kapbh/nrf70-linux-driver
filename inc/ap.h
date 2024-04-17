@@ -39,7 +39,8 @@ int nrf_wifi_cfg80211_chg_bss(struct wiphy *wiphy, struct net_device *netdev,
 int nrf_wifi_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *netdev,
 			       struct cfg80211_ap_settings *params);
 
-int nrf_wifi_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *netdev);
+int nrf_wifi_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *netdev,
+							unsigned int link_id);
 
 int nrf_wifi_cfg80211_chg_vif(struct wiphy *wiphy, struct net_device *netdev,
 			      enum nl80211_iftype type,
